@@ -1,260 +1,308 @@
-import express, { NextFunction, Request, Response } from 'express';
+import path from 'path';
+
+import express, { Request, Response } from 'express';
 import cors from 'cors';
-import mysql from 'mysql2/promise';
+import mysql, { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
+import dotenv from 'dotenv';
 
-const app = express()
-const PORT = process.env.PORT;
+import { comparePassword, hashPassword } from './utils/password';
+import { generateToken, verifyToken } from './utils/jwt';
+import { authenticateToken } from './middleware/auth';
 
-// Middleware
-app.use(cors({
-  origin: [
-    `https://${process.env.DOMAIN}`,
-    `https://www.${process.env.DOMAIN}`,
-  ],
-  credentials: true,
-}));
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+const isDev = process.env.NODE_ENV === 'development';
+const apiUrl: string = isDev ? 'http://localhost:3000' : 'https://api.sylvain-nas.ovh';
+
+if (isDev) dotenv.config({ path: path.resolve(__dirname, './utils/.env') });
+
+app.use(
+  cors({
+    origin: isDev
+      ? ['http://localhost:5173', 'http://localhost:3000'] // Dev
+      : [`https://${process.env.DOMAIN}`, `https://www.${process.env.DOMAIN}`], // Prod
+    credentials: true,
+  }),
+);
 app.use(express.json());
 
-// Database configuration
 const dbConfig = {
-    host: process.env.DB_HOST,
-    port: parseInt(process.env.DB_PORT || ''),
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-}
+  host: isDev ? 'localhost' : process.env.DB_HOST || 'mariadb',
+  port: parseInt(process.env.DB_PORT || '3306'),
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+};
 
-// connection pool
 let pool: mysql.Pool;
 
 async function initDatabase() {
   const maxRetries = 30;
   const retryDelay = 3000;
-  
-  for (let i = 0; i < maxRetries; i++) {
-    try {
+
+  try {
+    for (let i = 0; i < maxRetries; i++) {
+      try {
         pool = mysql.createPool(dbConfig);
         await pool.query('SELECT 1');
         console.log('Connection to MariaDb succeed');
         return;
-    } catch(error) {
-      console.log(`Tentative ${i + 1}/${maxRetries} - MariaDB not ready yet, next try in ${retryDelay/1000}s...`);
-      if (i === maxRetries - 1) {
-        console.error('Impossible to connect to MariaDb after ', maxRetries, ' tentatives');
-        console.error('Connection error to MariaDb: ', error);
-      } else {
-        await new Promise(resolve => setTimeout(resolve, retryDelay));
-      }    
+      } catch (error) {
+        console.log(
+          `Tentative ${i + 1}/${maxRetries} - MariaDB not ready yet, next try in ${retryDelay / 1000}s...`,
+        );
+        if (i === maxRetries - 1) {
+          console.error('Impossible to connect to MariaDb after ', maxRetries, ' tentatives');
+          console.error('Connection error to MariaDb: ', error);
+        } else {
+          await new Promise((resolve) => setTimeout(resolve, retryDelay));
+        }
+      }
     }
+  } catch (error) {
+    console.error('Connection error to MariaDb: ', error);
   }
-    try {
-
-    } catch(error) {
-        console.error('Connection error to MariaDb: ', error);
-    }
 }
 
-// Routes
-
-app.get('/api/error400', (req, res) => {
-  res.status(400).send('Custom Bad Request');
-});
-
-app.get('/api/error500', (req, res) => {
-  res.status(500).send('Custom Internal Server Error');
-});
-
-app.get('/api/error400json', (req, res) => {
-  res.status(400).json({ error: 'Bad Request' });
-});
-
-// Health check
 app.get('/health', (req: Request, res: Response) => {
-    res.json({
-        status: 'online',
-        timeStamp: new Date().toISOString(),
-        uptime: process.uptime(),
-    });
+  res.json({
+    status: 'online',
+    timeStamp: new Date().toISOString(),
+    uptime: process.uptime(),
+  });
 });
 
-// Main Route
 app.get('/', (req: Request, res: Response) => {
-    res.json({
-        message: 'API Node.js on Raspberry PI 5',
-        version: '1.0.0',
-        endpoints: [
-            'GET /',
-            'GET /health',
-            'GET /status',
-            'GET /hello/:name',
-            'POST /test',
-            'GET /db-test', 
-        ]
-    });
+  res.json({
+    message: 'API Node.js on Raspberry PI 5',
+    version: '1.0.0',
+    endpoints: [
+      'GET /',
+      'GET /health',
+      'GET /status',
+      'GET /hello/:name',
+      'POST /test',
+      'GET /db-test',
+      'GET /users',
+    ],
+  });
 });
 
-// Hello with parameters
 app.get('/hello/:name', (req: Request, res: Response) => {
-    const name = req.params;
-    res.json({
-        message: `Bonjour ${name}!`,
-        timetamp: new Date().toISOString(),
-    });
+  const name = req.params;
+  res.json({
+    message: `Bonjour ${name}!`,
+    timetamp: new Date().toISOString(),
+  });
 });
 
-// Test POST
 app.post('/test', (req: Request, res: Response) => {
   const data = req.body;
   res.json({
     message: 'Data received',
     received: data,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 });
 
-// System status
-app.get('/status', (req: Request, res: Response) => {
+app.get('/status', authenticateToken, (req: Request, res: Response) => {
   res.json({
     status: 'running',
     uptime: process.uptime(),
     memory: process.memoryUsage(),
     platform: process.platform,
     nodeVersion: process.version,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 });
 
-// database connection test
 app.get('/db-test', async (req: Request, res: Response) => {
   try {
     const [rows] = await pool.query('SELECT NOW() as now, VERSION() as version');
     res.json({
       message: 'Database connection succeed',
       data: rows,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
     res.status(500).json({
       error: 'Database connection error',
-      message: error instanceof Error ? error.message : 'Unknow error'
+      message: error instanceof Error ? error.message : 'Unknow error',
     });
   }
 });
 
-app.use((req: Request, res: Response) => {
-  res.status(404).send(errorPage(404, 'Page not found'));
+app.get('/api/users', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const [rows] = await pool.query(`SELECT * FROM users`);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({
+      error: 'Database query error',
+      message: err instanceof Error ? err.message : 'Unknow error',
+    });
+  }
 });
 
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  console.error('Server error: ', err);
-  res.status(500).send(errorPage(500, 'Internal server error'));
+type UserEmailHashPasswordRow = RowDataPacket & {
+  id: number;
+  email: string;
+  hash_password: string;
+};
+
+type RefreshTokenRow = RowDataPacket & {
+  id: number;
+  user_id: number;
+  token: string;
+  expires_at: Date;
+};
+
+app.post('/api/login', async (req, res) => {
+  const { email, password } = req.body;
+  try {
+    const [rows] = await pool.query<UserEmailHashPasswordRow[]>(
+      `SELECT id, email, hash_password FROM users WHERE users.email = ?`,
+      [email],
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const user = { id: rows[0].id, email: rows[0].email, hashPassword: rows[0].hash_password };
+
+    if (!user) {
+      return res.status(401).json({ error: 'Email incorrect' });
+    }
+
+    const isPasswordCorrect = await comparePassword(password, user.hashPassword);
+
+    if (!isPasswordCorrect) {
+      return res.status(401).json({ error: 'Password incorrect' });
+    }
+
+    const tokenExpiry = Number(process.env.JWT_EXPIRES_IN) || 300;
+    const refreshTokenExpiry = Number(process.env.JWT_REFRESH_EXPIRES_IN) || 10080;
+
+    const accessToken = generateToken({ userId: user.id, email: user.email }, tokenExpiry);
+
+    const refreshToken = generateToken({ userId: user.id, type: 'refresh' }, refreshTokenExpiry);
+
+    await pool.query(
+      `INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY))`,
+      [user.id, refreshToken],
+    );
+
+    res.json({
+      message: 'Login suceed',
+      accessToken,
+      refreshToken,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: `Database error: ${error}` });
+  }
 });
 
+type UserEmail = RowDataPacket & { email: string };
 
-function errorPage(statusCode: number, message: string): string {
-    const titles: Record<number, string> = {
-    400: 'Requête incorrecte',
-    404: 'Page non trouvée',
-    500: 'Erreur serveur'
-  };
+app.post('/api/register', async (req, res) => {
+  try {
+    const { email, password, name } = req.body;
 
-  return `
-    <!DOCTYPE html>
-    <html lang="fr">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Erreur ${statusCode}</title>
-      <style>
-        * {
-          margin: 0;
-          padding: 0;
-          box-sizing: border-box;
-        }
-        body {
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          min-height: 100vh;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 20px;
-        }
-        .container {
-          background: white;
-          padding: 60px 40px;
-          border-radius: 16px;
-          box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-          text-align: center;
-          max-width: 500px;
-          width: 100%;
-        }
-        .error-code {
-          font-size: 120px;
-          font-weight: bold;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          line-height: 1;
-          margin-bottom: 20px;
-        }
-        h1 {
-          font-size: 28px;
-          color: #333;
-          margin-bottom: 15px;
-        }
-        p {
-          font-size: 16px;
-          color: #666;
-          line-height: 1.6;
-          margin-bottom: 30px;
-        }
-        .btn {
-          display: inline-block;
-          padding: 14px 32px;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          color: white;
-          text-decoration: none;
-          border-radius: 8px;
-          font-weight: 600;
-          transition: transform 0.2s, box-shadow 0.2s;
-        }
-        .btn:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
-        }
-        .details {
-          margin-top: 30px;
-          padding-top: 30px;
-          border-top: 1px solid #eee;
-          font-size: 14px;
-          color: #999;
-        }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <div class="error-code">${statusCode}</div>
-        <h1>${titles[statusCode] || 'Erreur'}</h1>
-        <p>${message}</p>
-        <a href="/" class="btn">Retour à l'accueil</a>
-        <div class="details">
-          Si le problème persiste, contactez l'administrateur
-        </div>
-      </div>
-    </body>
-    </html>
-  `;
-}
+    if (!email || !password || !name) {
+      return res.status(400).json({ message: 'Missing required fields' });
+    }
+
+    const [rows] = await pool.query<UserEmail[]>(`SELECT email FROM users WHERE users.email = ?`, [
+      email,
+    ]);
+
+    if (rows.length > 0) {
+      return res.status(400).json({ message: 'user already registered' });
+    }
+
+    const hashedPassword = await hashPassword(password);
+
+    const [result] = await pool.query<ResultSetHeader>(
+      `INSERT INTO users (name, email, hash_password, created_at, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+      [name, email, hashedPassword],
+    );
+
+    const userId = result.insertId;
+
+    const tokenExpiry = Number(process.env.JWT_EXPIRES_IN) || 300;
+    const refreshTokenExpiry = Number(process.env.JWT_REFRESH_EXPIRES_IN) || 10080;
+
+    const accessToken = generateToken({ userId, email }, tokenExpiry);
+
+    const refreshToken = generateToken({ userId, type: 'refresh' }, refreshTokenExpiry);
+
+    await pool.query(
+      `INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY))`,
+      [userId, refreshToken],
+    );
+
+    return res
+      .status(201)
+      .json({ message: 'Account successfully created', accessToken, refreshToken });
+  } catch (err) {
+    console.log('error : ', err);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+app.get('/api/auth/verify', authenticateToken, (req, res) => {
+  res.json({
+    authenticated: true,
+    user: req.user,
+  });
+});
+
+app.post('/api/auth/refresh', async (req, res) => {
+  const { refreshToken } = req.body;
+
+  if (!refreshToken) {
+    return res.status(401).json({ error: 'Refresh token missing' });
+  }
+
+  const decoded = verifyToken(refreshToken);
+
+  if (!decoded || decoded.type !== 'refresh') {
+    return res.status(401).json({ error: 'Invalid refresh token' });
+  }
+
+  try {
+    const [rows] = await pool.query<RefreshTokenRow[]>(
+      'SELECT * FROM refresh_tokens WHERE token = ? AND expires_at > NOW()',
+      [refreshToken],
+    );
+
+    if (rows.length === 0) {
+      return res.status(401).json({ error: 'Refresh token expired or revoked' });
+    }
+    const refreshTokenExpiry = Number(process.env.JWT_REFRESH_EXPIRES_IN) || 10080;
+
+    const newAccessToken = generateToken(
+      { userId: decoded.userId, email: decoded.email },
+      refreshTokenExpiry,
+    );
+
+    res.json({ accessToken: newAccessToken });
+  } catch (error) {
+    console.error('Refresh error:', error);
+    return res.status(500).json({ message: 'Database error' });
+  }
+});
 
 async function startServer() {
-    await initDatabase();
+  await initDatabase();
 
-    app.listen(PORT, () => {
-        console.log(`Server started on port ${PORT}`);
-        console.log(`Environment: ${process.env.NODE_ENV}`);
-        console.log(`Can access on: https://api.sylvain-nas.ovh`);
-    })
+  app.listen(PORT, () => {
+    console.log(`Server started on port ${PORT}`);
+    console.log(`Environment: ${process.env.NODE_ENV}`);
+    console.log(`Can access on: ${apiUrl}`);
+  });
 }
 
 startServer();

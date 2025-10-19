@@ -1,5 +1,37 @@
 {
+  "type": "module",
+  "scripts": {
+    "up:prod": "docker compose up -d --build",
+    "down:prod": "docker compose down",
+    "lint": "eslint . --ext ts,tsx,js,jsx --max-warnings=0",
+    "lint:fix": "eslint . --ext ts,tsx,js,jsx --fix",
+    "format": "prettier --write .",
+    "db:export:dev": "mysqldump -h127.0.0.1 -P3306 -uappuser -pmypassword appdb > $(node scripts/db-path.js)",
+    "db:import:dev": "mysql -h127.0.0.1 -P3306 -uappuser -pmypassword appdb < $(node scripts/db-path.js)",
+    "db:export:prod": "docker exec mariadb mariadb-dump -uappuser -pmypassword appdb > $(node scripts/db-path.js)",
+    "db:import:prod": "docker exec -i mariadb mariadb -uappuser -pmypassword appdb < $(node scripts/db-path.js)"
+  },
   "devDependencies": {
+    "@eslint/js": "^9.38.0",
+    "@types/bcrypt": "^6.0.0",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@typescript-eslint/eslint-plugin": "^8.46.2",
+    "@typescript-eslint/parser": "^8.46.2",
+    "eslint": "^9.38.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-prettier": "^5.5.4",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.0",
+    "prettier": "^3.6.2",
+    "tailwindcss-animate": "^1.0.7",
+    "typescript-eslint": "^8.46.2",
     "tailwindcss-animate": "^1.0.7"
+  },
+  "dependencies": {
+    "react-router-dom": "^7.9.4",
+    "bcrypt": "^6.0.0",
+    "jsonwebtoken": "^9.0.2"
   }
 }
