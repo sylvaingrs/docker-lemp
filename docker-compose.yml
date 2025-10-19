@@ -29,7 +29,7 @@ services:
     environment:
       - DEFAULT_EMAIL=${EMAIL}
       - NGINX_PROXY_CONTAINER=nginx-proxy
-      - ACME_CA_URI=https://acme-staging-v02.api.letsencrypt.org/directory
+#      - ACME_CA_URI=https://acme-staging-v02.api.letsencrypt.org/directory
     depends_on:
       - nginx-proxy
     networks:
@@ -73,7 +73,7 @@ services:
     restart: always
     environment:
       - NODE_ENV=${NODE_ENV}
-      - PORT=${NODE_PORT}
+      - PORT=${PORT}
       - DOMAIN=${DOMAIN}
       - DB_HOST=mariadb
       - DB_PORT=3306
@@ -83,6 +83,9 @@ services:
       - VIRTUAL_HOST=api.${DOMAIN}
       - LETSENCRYPT_HOST=api.${DOMAIN}
       - LETSENCRYPT_EMAIL=${EMAIL}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN}
+      - JWT_REFRESH_EXPIRES_IN=${JWT_REFRESH_EXPIRES_IN}
     depends_on:
       - mariadb
     networks:

@@ -1,21 +1,18 @@
-# Environment
-.env
-
-# Volumes Docker (NE JAMAIS COMMIT !)
 nginx/certs/
 nginx/acme/
-mariadb/data/
 
-# Node modules
+mariadb/data
+mariadb/dumps/*.sql
+!mariadb/dumps/.gitkeep
+!mariadb/dumps/init.sql
+
 **/node_modules/
 **/dist/
 **/.vite/
 
-# Logs
 *.log
 npm-debug.log*
 
-# OS
 .DS_Store
 Thumbs.db
 
