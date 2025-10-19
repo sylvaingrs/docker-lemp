@@ -8,6 +8,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Button } from './components/ui/button';
+import { url } from './lib/utils';
 
 function App() {
   return (
@@ -42,9 +43,17 @@ function AppLayout() {
           Utilisateurs
         </Link>
         <Button
-          onClick={() => {
+          onClick={async () => {
+            try {
+              await fetch(`${url}/api/auth/logout`, {
+                method: 'POST',
+                credentials: 'include',
+              });
+            } catch (err) {
+              console.error('Logout error:', err);
+            }
             localStorage.removeItem('accessToken');
-            localStorage.removeItem('refreshToken');
+
             window.location.href = '/login';
           }}
           className="hover:underline"

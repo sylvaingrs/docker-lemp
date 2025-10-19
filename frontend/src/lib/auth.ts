@@ -1,22 +1,15 @@
 import { url } from './utils';
 
 export async function refreshAccessToken(): Promise<string | null> {
-  const refreshToken = localStorage.getItem('refreshToken');
-
-  if (!refreshToken) {
-    return null;
-  }
-
   try {
     const response = await fetch(`${url}/api/auth/refresh`, {
       method: 'POST',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken }),
     });
 
     if (!response.ok) {
       localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
       return null;
     }
 
@@ -26,7 +19,8 @@ export async function refreshAccessToken(): Promise<string | null> {
 
     return data.accessToken;
   } catch (error) {
-    console.error('Refresh error:', error);
+    console.error('refreshAccessToken: Refresh error:', error);
+    localStorage.removeItem('accessToken');
     return null;
   }
 }

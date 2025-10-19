@@ -16,6 +16,7 @@ export async function fetchData<T>(
 
     const res = await fetch(url, {
       method: method,
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
         ...(token && { Authorization: `Bearer ${token}` }),
@@ -35,6 +36,7 @@ export async function fetchData<T>(
 
       const retryRes = await fetch(url, {
         method: method,
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${newToken}`,
