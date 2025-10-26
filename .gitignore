@@ -1,4 +1,7 @@
-docker-compose.dev.yml
+.env
+.env.development
+.env.production
+
 # Volumes Docker (NE JAMAIS COMMIT !)
 nginx/certs/
 nginx/acme/
