@@ -6,7 +6,7 @@ services:
     ports:
       - '3306:3306'
     env_file:
-      - ../.env
+      - .env.development
     volumes:
       - mariadb-dev-data:/var/lib/mysql
 
