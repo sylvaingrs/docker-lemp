@@ -5,7 +5,9 @@
     "down": "docker compose down",
     "lint": "eslint . --ext ts,tsx,js,jsx --max-warnings=0",
     "lint:fix": "eslint . --ext ts,tsx,js,jsx --fix",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "db:export": "mysqldump -h127.0.0.1 -P3306 -uappuser -pmypassword appdb > ./mariadb/init.sql",
+    "db:import": "mysql -h127.0.0.1 -P3306 -uappuser -pmypassword appdb < ./mariadb/init.sql"
   },
   "devDependencies": {
     "@eslint/js": "^9.38.0",
