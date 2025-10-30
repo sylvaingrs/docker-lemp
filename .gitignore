@@ -5,7 +5,7 @@
 # Volumes Docker (NE JAMAIS COMMIT !)
 nginx/certs/
 nginx/acme/
-mariadb/data/
+mariadb/data
 
 # Node modules
 **/node_modules/
