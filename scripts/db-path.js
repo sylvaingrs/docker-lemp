@@ -1,6 +1,16 @@
-import { existsSync } from "fs";
+import { existsSync, mkdirSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 
-const isPi = existsSync("/mnt/nvme256/mariadb-data/dumps/init.sql");
-const path = isPi ? "/mnt/nvme256/mariadb-data/dumps/init.sql" : "./mariadb/dumps/init.sql";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const projectRoot = join(__dirname, '..');
 
-console.log(path);
+const dumpsDir = join(projectRoot, 'mariadb', 'dumps');
+const sqlFile = join(dumpsDir, 'init.sql');
+
+if (!existsSync(dumpsDir)) {
+  mkdirSync(dumpsDir, { recursive: true });
+}
+
+console.log(sqlFile);
