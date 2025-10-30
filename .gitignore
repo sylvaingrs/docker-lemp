@@ -6,6 +6,8 @@
 nginx/certs/
 nginx/acme/
 mariadb/data
+mariadb/dumps/*.sql
+!mariadb/dumps/.gitkeep
 
 # Node modules
 **/node_modules/
