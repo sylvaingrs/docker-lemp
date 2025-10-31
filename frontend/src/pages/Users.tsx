@@ -7,15 +7,15 @@ interface User {
   name: string;
 }
 
+const url: string = (import.meta as any).env.VITE_API_URL;
+
 export default function Users() {
   const [users, setUsers] = useState<{ id: number; name: string }[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadUsers = async () => {
-      const { data, error } = await fetchData<User[]>(
-        `${(import.meta as any).env.VITE_API_URL}/api/users`,
-      );
+      const { data, error } = await fetchData<User[]>(`${url}/api/users`);
       if (error) {
         setError(error.message);
       } else if (data) {

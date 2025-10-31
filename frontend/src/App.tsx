@@ -4,6 +4,7 @@ import Home from './pages/Home';
 import Status from './pages/Status';
 import './App.css';
 import Users from './pages/Users';
+import Login from './pages/Login';
 
 function App() {
   return (
@@ -18,6 +19,9 @@ function App() {
         <Link to="/users" className="hover:underline">
           Utilisateurs
         </Link>
+        <Link to="/login" className="hover:underline">
+          Login
+        </Link>
       </nav>
 
       <div className="p-6">
@@ -25,6 +29,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/status" element={<Status />} />
           <Route path="/users" element={<Users />} />
+          <Route path="/login" element={<Login />} />
         </Routes>
       </div>
     </Router>

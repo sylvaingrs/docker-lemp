@@ -1,6 +1,8 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
-import mysql from 'mysql2/promise';
+import mysql, { RowDataPacket } from 'mysql2/promise';
+import { comparePassword, hashPassword } from './utils/password';
+import { generateToken } from './utils/jwt';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -159,23 +161,76 @@ app.get('/api/users', async (req: Request, res: Response) => {
   }
 });
 
-app.post('/users/create', async (req: Request, res: Response) => {
-  try {
-    const data = req.body;
-    const name = data.name;
+type UserEmailHashPasswordRow = RowDataPacket & {
+  id: number;
+  email: string;
+  hash_password: string;
+};
 
-    await pool.query(`INSERT INTO users (name) VALUES ('${name}')`);
+app.post('/api/login', async (req, res) => {
+  const { email, hashPassword } = req.body;
+  try {
+    const [rows] = await pool.query<UserEmailHashPasswordRow[]>(
+      `SELECT id, email, hash_password FROM users WHERE user.email = ${email}`,
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const user = { id: rows[0].id, email: rows[0].email, hashPassword: rows[0].hash_password };
+
+    console.log(user);
+
+    if (!user) {
+      return res.status(401).json({ error: 'Email incorrect' });
+    }
+
+    const isPasswordCorrect = await comparePassword(hashPassword, user.hashPassword);
+
+    if (!isPasswordCorrect) {
+      return res.status(401).json({ error: 'Password incorrect' });
+    }
+
+    const token = generateToken({ userId: user.id, email: user.email });
 
     res.json({
-      message: 'User created',
-      received: data,
+      message: 'Login suceed',
+      token: token,
     });
   } catch (error) {
-    res.status(500).json({
-      error: 'Database query error',
-      message: error instanceof Error ? error.message : 'Unknow error',
-    });
+    return res.status(500).json({ message: `Database error: ${error}` });
   }
+});
+
+type UserEmail = RowDataPacket & { email: number };
+type User = RowDataPacket & {
+  name: string;
+  email: string;
+  hash_password: string;
+  created_at: Date;
+  updated_at: Date;
+};
+app.post('/api/register', async (req, res) => {
+  const { email, password, name } = req.body;
+
+  const [rows] = await pool.query<UserEmail[]>(`SELECT email FROM users WHERE user.email = ?`, [
+    email,
+  ]);
+
+  const existingEmail = rows[0].email;
+
+  if (existingEmail) {
+    res.status(400).json({ message: 'user already registered' });
+  }
+
+  const hashedPassword = await hashPassword(password);
+
+  await pool.query<User[]>(
+    `INSERT INTO users (name, email, hash_password, created_at, updated_at) VALUES (${name}, ${email}, ${hashedPassword}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+  );
+
+  return res.status(201).json({ message: 'Account successfully created' });
 });
 
 app.use((req: Request, res: Response) => {
