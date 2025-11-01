@@ -5,6 +5,9 @@ import Status from './pages/Status';
 import './App.css';
 import Users from './pages/Users';
 import Login from './pages/Login';
+import Register from './pages/Register';
+
+export const url: string = (import.meta as any).env.VITE_API_URL;
 
 function App() {
   return (
@@ -22,6 +25,9 @@ function App() {
         <Link to="/login" className="hover:underline">
           Login
         </Link>
+        <Link to="/register" className="hover:underline">
+          Register
+        </Link>
       </nav>
 
       <div className="p-6">
@@ -30,6 +36,7 @@ function App() {
           <Route path="/status" element={<Status />} />
           <Route path="/users" element={<Users />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
         </Routes>
       </div>
     </Router>

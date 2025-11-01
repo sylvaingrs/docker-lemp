@@ -1,6 +1,10 @@
+import path from 'path';
+
 import express, { Request, Response } from 'express';
 import cors from 'cors';
-import mysql, { RowDataPacket } from 'mysql2/promise';
+import mysql, { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
+import dotenv from 'dotenv';
+
 import { comparePassword, hashPassword } from './utils/password';
 import { generateToken } from './utils/jwt';
 
@@ -9,6 +13,8 @@ const PORT = process.env.PORT || 3000;
 
 const isDev = process.env.NODE_ENV === 'development';
 const apiUrl: string = isDev ? 'http://localhost:3000' : 'https://api.sylvain-nas.ovh';
+
+dotenv.config({ path: path.resolve(__dirname, './utils/.env') });
 
 // Middleware
 app.use(
@@ -168,10 +174,10 @@ type UserEmailHashPasswordRow = RowDataPacket & {
 };
 
 app.post('/api/login', async (req, res) => {
-  const { email, hashPassword } = req.body;
+  const { email, password } = req.body;
   try {
     const [rows] = await pool.query<UserEmailHashPasswordRow[]>(
-      `SELECT id, email, hash_password FROM users WHERE user.email = ${email}`,
+      `SELECT id, email, hash_password FROM users WHERE users.email = '${email}'`,
     );
 
     if (rows.length === 0) {
@@ -180,13 +186,11 @@ app.post('/api/login', async (req, res) => {
 
     const user = { id: rows[0].id, email: rows[0].email, hashPassword: rows[0].hash_password };
 
-    console.log(user);
-
     if (!user) {
       return res.status(401).json({ error: 'Email incorrect' });
     }
 
-    const isPasswordCorrect = await comparePassword(hashPassword, user.hashPassword);
+    const isPasswordCorrect = await comparePassword(password, user.hashPassword);
 
     if (!isPasswordCorrect) {
       return res.status(401).json({ error: 'Password incorrect' });
@@ -203,7 +207,7 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-type UserEmail = RowDataPacket & { email: number };
+type UserEmail = RowDataPacket & { email: string };
 type User = RowDataPacket & {
   name: string;
   email: string;
@@ -212,25 +216,31 @@ type User = RowDataPacket & {
   updated_at: Date;
 };
 app.post('/api/register', async (req, res) => {
-  const { email, password, name } = req.body;
+  try {
+    const { email, password, name } = req.body;
+    const [rows] = await pool.query<UserEmail[]>(`SELECT email FROM users WHERE users.email = ?`, [
+      email,
+    ]);
 
-  const [rows] = await pool.query<UserEmail[]>(`SELECT email FROM users WHERE user.email = ?`, [
-    email,
-  ]);
+    if (rows.length > 0) {
+      return res.status(400).json({ message: 'user already registered' });
+    }
 
-  const existingEmail = rows[0].email;
+    const hashedPassword = await hashPassword(password);
 
-  if (existingEmail) {
-    res.status(400).json({ message: 'user already registered' });
+    const [result] = await pool.query<ResultSetHeader>(
+      `INSERT INTO users (name, email, hash_password, created_at, updated_at) VALUES ('${name}', '${email}', '${hashedPassword}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+    );
+
+    const userId = result.insertId;
+
+    const token = generateToken({ userId, email });
+
+    return res.status(201).json({ message: 'Account successfully created', token });
+  } catch (err) {
+    console.log('error : ', err);
+    return res.status(500).json({ message: 'Internal server error' });
   }
-
-  const hashedPassword = await hashPassword(password);
-
-  await pool.query<User[]>(
-    `INSERT INTO users (name, email, hash_password, created_at, updated_at) VALUES (${name}, ${email}, ${hashedPassword}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
-  );
-
-  return res.status(201).json({ message: 'Account successfully created' });
 });
 
 app.use((req: Request, res: Response) => {

@@ -1,13 +1,11 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { fetchData } from '@/lib/utils';
+import { fetchData, url } from '@/lib/utils';
 import { useEffect, useState } from 'react';
 
 interface User {
   id: number;
   name: string;
 }
-
-const url: string = (import.meta as any).env.VITE_API_URL;
 
 export default function Users() {
   const [users, setUsers] = useState<{ id: number; name: string }[]>([]);

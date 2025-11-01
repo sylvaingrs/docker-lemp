@@ -1,8 +1,9 @@
 import { fetchData, ResponseRegister, url } from '@/lib/utils';
 import { useState } from 'react';
 
-export default function Login() {
+export default function Register() {
   const [formData, setFormData] = useState({
+    name: '',
     email: '',
     password: '',
   });
@@ -10,10 +11,11 @@ export default function Login() {
   const [err, setErr] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e: { preventDefault: () => void }) => {
+    e.preventDefault();
     setErr('');
     setLoading(true);
-    const responseRegister: ResponseRegister = await fetchData(`${url}/api/login`, {
+    const responseRegister: ResponseRegister = await fetchData(`${url}/api/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(formData),
@@ -27,6 +29,7 @@ export default function Login() {
 
     if (responseRegister.data?.token) {
       localStorage.setItem('token', responseRegister.data.token);
+      alert('Account successfully created');
       window.location.href = '/';
     } else {
       setErr('No token returned');
@@ -39,15 +42,28 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-md">
         <div className="bg-white rounded-lg shadow-md p-8">
-          <h1 className="text-2xl font-bold text-center mb-6">Connexion</h1>
+          <h1 className="text-2xl font-bold text-center mb-6">Inscription</h1>
 
-          <div className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Nom</label>
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                required
+                className="flex h-9 w-full rounded-md border border-gray-300 bg-transparent px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                placeholder="Votre nom"
+              />
+            </div>
+
             <div>
               <label className="block text-sm font-medium mb-1">Email</label>
               <input
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                required
                 className="flex h-9 w-full rounded-md border border-gray-300 bg-transparent px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
                 placeholder="votre@email.com"
               />
@@ -59,8 +75,10 @@ export default function Login() {
                 type="password"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                required
+                minLength={6}
                 className="flex h-9 w-full rounded-md border border-gray-300 bg-transparent px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-                placeholder="Votre mot de passe"
+                placeholder="Minimum 6 caractères"
               />
             </div>
 
@@ -71,17 +89,19 @@ export default function Login() {
             )}
 
             <button
-              onClick={handleSubmit}
+              type="submit"
               disabled={loading}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {loading ? 'Connexion...' : 'Se connecter'}
+              {loading ? 'Inscription...' : "S'inscrire"}
             </button>
-          </div>
+          </form>
 
           <p className="text-center text-sm text-gray-600 mt-4">
-            Pas encore de compte ?{' '}
-            <span className="text-blue-600 hover:underline cursor-pointer">S'inscrire</span>
+            Déjà un compte ?{' '}
+            <a href="/login" className="text-blue-600 hover:underline">
+              Se connecter
+            </a>
           </p>
         </div>
       </div>
