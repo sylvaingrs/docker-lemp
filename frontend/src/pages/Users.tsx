@@ -13,7 +13,7 @@ export default function Users() {
 
   useEffect(() => {
     const loadUsers = async () => {
-      const { data, error } = await fetchData<User[]>(`${url}/api/users`);
+      const { data, error } = await fetchData<User[]>(`${url}/api/users`, 'GET');
       if (error) {
         setError(error.message);
       } else if (data) {

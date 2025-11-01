@@ -15,11 +15,11 @@ export default function Register() {
     e.preventDefault();
     setErr('');
     setLoading(true);
-    const responseRegister: ResponseRegister = await fetchData(`${url}/api/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formData),
-    });
+    const responseRegister: ResponseRegister = await fetchData(
+      `${url}/api/register`,
+      'POST',
+      formData,
+    );
 
     if (responseRegister.error) {
       setErr(responseRegister.error.message);

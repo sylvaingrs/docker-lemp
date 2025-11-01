@@ -7,6 +7,7 @@ import dotenv from 'dotenv';
 
 import { comparePassword, hashPassword } from './utils/password';
 import { generateToken } from './utils/jwt';
+import { authenticateToken } from './middleware/auth';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -16,7 +17,6 @@ const apiUrl: string = isDev ? 'http://localhost:3000' : 'https://api.sylvain-na
 
 dotenv.config({ path: path.resolve(__dirname, './utils/.env') });
 
-// Middleware
 app.use(
   cors({
     origin: isDev
@@ -27,7 +27,6 @@ app.use(
 );
 app.use(express.json());
 
-// Database configuration
 const dbConfig = {
   host: isDev ? 'localhost' : process.env.DB_HOST || 'mariadb',
   port: parseInt(process.env.DB_PORT || '3306'),
@@ -36,7 +35,6 @@ const dbConfig = {
   database: process.env.DB_NAME,
 };
 
-// connection pool
 let pool: mysql.Pool;
 
 async function initDatabase() {
@@ -67,21 +65,6 @@ async function initDatabase() {
   }
 }
 
-// Routes
-
-app.get('/api/error400', (req, res) => {
-  res.status(400).send('Custom Bad Request');
-});
-
-app.get('/api/error500', (req, res) => {
-  res.status(500).send('Custom Internal Server Error');
-});
-
-app.get('/api/error400json', (req, res) => {
-  res.status(400).json({ error: 'Bad Request' });
-});
-
-// Health check
 app.get('/health', (req: Request, res: Response) => {
   res.json({
     status: 'online',
@@ -90,7 +73,6 @@ app.get('/health', (req: Request, res: Response) => {
   });
 });
 
-// Main Route
 app.get('/', (req: Request, res: Response) => {
   res.json({
     message: 'API Node.js on Raspberry PI 5',
@@ -107,7 +89,6 @@ app.get('/', (req: Request, res: Response) => {
   });
 });
 
-// Hello with parameters
 app.get('/hello/:name', (req: Request, res: Response) => {
   const name = req.params;
   res.json({
@@ -116,7 +97,6 @@ app.get('/hello/:name', (req: Request, res: Response) => {
   });
 });
 
-// Test POST
 app.post('/test', (req: Request, res: Response) => {
   const data = req.body;
   res.json({
@@ -126,8 +106,7 @@ app.post('/test', (req: Request, res: Response) => {
   });
 });
 
-// System status
-app.get('/status', (req: Request, res: Response) => {
+app.get('/status', authenticateToken, (req: Request, res: Response) => {
   res.json({
     status: 'running',
     uptime: process.uptime(),
@@ -138,7 +117,6 @@ app.get('/status', (req: Request, res: Response) => {
   });
 });
 
-// database connection test
 app.get('/db-test', async (req: Request, res: Response) => {
   try {
     const [rows] = await pool.query('SELECT NOW() as now, VERSION() as version');
@@ -155,7 +133,7 @@ app.get('/db-test', async (req: Request, res: Response) => {
   }
 });
 
-app.get('/api/users', async (req: Request, res: Response) => {
+app.get('/api/users', authenticateToken, async (req: Request, res: Response) => {
   try {
     const [rows] = await pool.query(`SELECT * FROM users`);
     res.json(rows);
@@ -208,13 +186,7 @@ app.post('/api/login', async (req, res) => {
 });
 
 type UserEmail = RowDataPacket & { email: string };
-type User = RowDataPacket & {
-  name: string;
-  email: string;
-  hash_password: string;
-  created_at: Date;
-  updated_at: Date;
-};
+
 app.post('/api/register', async (req, res) => {
   try {
     const { email, password, name } = req.body;
@@ -243,110 +215,12 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
-app.use((req: Request, res: Response) => {
-  res.status(404).send(errorPage(404, 'Page not found'));
+app.get('/api/auth/verify', authenticateToken, (req, res) => {
+  res.json({
+    authenticated: true,
+    user: req.user,
+  });
 });
-
-app.use((err: Error, req: Request, res: Response) => {
-  console.error('Server error: ', err);
-  res.status(500).send(errorPage(500, 'Internal server error'));
-});
-
-function errorPage(statusCode: number, message: string): string {
-  const titles: Record<number, string> = {
-    400: 'Requête incorrecte',
-    404: 'Page non trouvée',
-    500: 'Erreur serveur',
-  };
-
-  return `
-    <!DOCTYPE html>
-    <html lang="fr">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Erreur ${statusCode}</title>
-      <style>
-        * {
-          margin: 0;
-          padding: 0;
-          box-sizing: border-box;
-        }
-        body {
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          min-height: 100vh;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 20px;
-        }
-        .container {
-          background: white;
-          padding: 60px 40px;
-          border-radius: 16px;
-          box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-          text-align: center;
-          max-width: 500px;
-          width: 100%;
-        }
-        .error-code {
-          font-size: 120px;
-          font-weight: bold;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          line-height: 1;
-          margin-bottom: 20px;
-        }
-        h1 {
-          font-size: 28px;
-          color: #333;
-          margin-bottom: 15px;
-        }
-        p {
-          font-size: 16px;
-          color: #666;
-          line-height: 1.6;
-          margin-bottom: 30px;
-        }
-        .btn {
-          display: inline-block;
-          padding: 14px 32px;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          color: white;
-          text-decoration: none;
-          border-radius: 8px;
-          font-weight: 600;
-          transition: transform 0.2s, box-shadow 0.2s;
-        }
-        .btn:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
-        }
-        .details {
-          margin-top: 30px;
-          padding-top: 30px;
-          border-top: 1px solid #eee;
-          font-size: 14px;
-          color: #999;
-        }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <div class="error-code">${statusCode}</div>
-        <h1>${titles[statusCode] || 'Erreur'}</h1>
-        <p>${message}</p>
-        <a href="/" class="btn">Retour à l'accueil</a>
-        <div class="details">
-          Si le problème persiste, contactez l'administrateur
-        </div>
-      </div>
-    </body>
-    </html>
-  `;
-}
 
 async function startServer() {
   await initDatabase();

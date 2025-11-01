@@ -6,12 +6,31 @@ import './App.css';
 import Users from './pages/Users';
 import Login from './pages/Login';
 import Register from './pages/Register';
-
-export const url: string = (import.meta as any).env.VITE_API_URL;
+import { ProtectedRoute } from './components/ProtectedRoute';
+import { Button } from './components/ui/button';
 
 function App() {
   return (
     <Router>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />*
+        <Route
+          path="/*"
+          element={
+            <ProtectedRoute>
+              <AppLayout />
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
+    </Router>
+  );
+}
+
+function AppLayout() {
+  return (
+    <>
       <nav className="p-4 bg-slate-800 text-white flex justify-center gap-6">
         <Link to="/" className="hover:underline">
           Accueil
@@ -22,12 +41,15 @@ function App() {
         <Link to="/users" className="hover:underline">
           Utilisateurs
         </Link>
-        <Link to="/login" className="hover:underline">
-          Login
-        </Link>
-        <Link to="/register" className="hover:underline">
-          Register
-        </Link>
+        <Button
+          onClick={() => {
+            localStorage.removeItem('token');
+            window.location.href = '/login';
+          }}
+          className="hover:underline"
+        >
+          Disconnect
+        </Button>
       </nav>
 
       <div className="p-6">
@@ -35,11 +57,9 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/status" element={<Status />} />
           <Route path="/users" element={<Users />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
         </Routes>
       </div>
-    </Router>
+    </>
   );
 }
 

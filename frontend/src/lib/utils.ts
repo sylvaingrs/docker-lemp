@@ -7,12 +7,22 @@ export function cn(...inputs: ClassValue[]) {
 
 export async function fetchData<T>(
   url: string,
-  params = {},
+  method: string,
+  body?: any,
 ): Promise<{ data: T | null; error: Error | null }> {
   try {
-    const res = await fetch(url, params);
+    const token = localStorage.getItem('token');
+
+    const res = await fetch(url, {
+      method: method,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+      ...(body && { body: JSON.stringify(body) }),
+    });
     if (!res.ok) throw new Error(`HTTP ${res.status} - ${res.statusText}`);
-    const apiData: T = await res.json();
+    const apiData = await res.json();
     return { data: apiData, error: null };
   } catch (error) {
     console.log(`Error caught : ${error}`);

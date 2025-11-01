@@ -13,11 +13,11 @@ export default function Login() {
   const handleSubmit = async () => {
     setErr('');
     setLoading(true);
-    const responseRegister: ResponseRegister = await fetchData(`${url}/api/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formData),
-    });
+    const responseRegister: ResponseRegister = await fetchData(
+      `${url}/api/login`,
+      'POST',
+      formData,
+    );
 
     if (responseRegister.error) {
       setErr(responseRegister.error.message);
@@ -81,7 +81,9 @@ export default function Login() {
 
           <p className="text-center text-sm text-gray-600 mt-4">
             Pas encore de compte ?{' '}
-            <span className="text-blue-600 hover:underline cursor-pointer">S'inscrire</span>
+            <a href="/register" className="text-blue-600 hover:underline">
+              S'inscrire
+            </a>
           </p>
         </div>
       </div>
