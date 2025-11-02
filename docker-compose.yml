@@ -83,6 +83,8 @@ services:
       - VIRTUAL_HOST=api.${DOMAIN}
       - LETSENCRYPT_HOST=api.${DOMAIN}
       - LETSENCRYPT_EMAIL=${EMAIL}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN}
     depends_on:
       - mariadb
     networks:

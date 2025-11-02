@@ -15,7 +15,7 @@ const PORT = process.env.PORT || 3000;
 const isDev = process.env.NODE_ENV === 'development';
 const apiUrl: string = isDev ? 'http://localhost:3000' : 'https://api.sylvain-nas.ovh';
 
-dotenv.config({ path: path.resolve(__dirname, './utils/.env') });
+if (isDev) dotenv.config({ path: path.resolve(__dirname, './utils/.env') });
 
 app.use(
   cors({
