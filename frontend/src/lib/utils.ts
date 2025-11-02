@@ -21,11 +21,17 @@ export async function fetchData<T>(
       },
       ...(body && { body: JSON.stringify(body) }),
     });
+
+    if (res.status === 401) {
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+      throw new Error('Session expirée');
+    }
+
     if (!res.ok) throw new Error(`HTTP ${res.status} - ${res.statusText}`);
     const apiData = await res.json();
     return { data: apiData, error: null };
   } catch (error) {
-    console.log(`Error caught : ${error}`);
     return { data: null, error: error instanceof Error ? error : Error('Unknow error') };
   }
 }

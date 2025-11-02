@@ -155,7 +155,8 @@ app.post('/api/login', async (req, res) => {
   const { email, password } = req.body;
   try {
     const [rows] = await pool.query<UserEmailHashPasswordRow[]>(
-      `SELECT id, email, hash_password FROM users WHERE users.email = '${email}'`,
+      `SELECT id, email, hash_password FROM users WHERE users.email = ?`,
+      [email],
     );
 
     if (rows.length === 0) {
@@ -201,7 +202,8 @@ app.post('/api/register', async (req, res) => {
     const hashedPassword = await hashPassword(password);
 
     const [result] = await pool.query<ResultSetHeader>(
-      `INSERT INTO users (name, email, hash_password, created_at, updated_at) VALUES ('${name}', '${email}', '${hashedPassword}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+      `INSERT INTO users (name, email, hash_password, created_at, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+      [name, email, hashedPassword],
     );
 
     const userId = result.insertId;
