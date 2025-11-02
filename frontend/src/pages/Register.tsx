@@ -1,4 +1,4 @@
-import { fetchData, ResponseRegister, url } from '@/lib/utils';
+import { fetchData, ResponseRegisterAndLogin, url } from '@/lib/utils';
 import { useState } from 'react';
 
 export default function Register() {
@@ -15,7 +15,7 @@ export default function Register() {
     e.preventDefault();
     setErr('');
     setLoading(true);
-    const responseRegister: ResponseRegister = await fetchData(
+    const responseRegister: ResponseRegisterAndLogin = await fetchData(
       `${url}/api/register`,
       'POST',
       formData,
@@ -27,8 +27,9 @@ export default function Register() {
       return;
     }
 
-    if (responseRegister.data?.token) {
-      localStorage.setItem('token', responseRegister.data.token);
+    if (responseRegister.data?.accessToken && responseRegister.data.refreshToken) {
+      localStorage.setItem('accessToken', responseRegister.data.accessToken);
+      localStorage.setItem('refreshToken', responseRegister.data.refreshToken);
       alert('Account successfully created');
       window.location.href = '/';
     } else {

@@ -1,4 +1,4 @@
-import { fetchData, ResponseRegister, url } from '@/lib/utils';
+import { fetchData, ResponseRegisterAndLogin, url } from '@/lib/utils';
 import { useState } from 'react';
 
 export default function Login() {
@@ -13,20 +13,21 @@ export default function Login() {
   const handleSubmit = async () => {
     setErr('');
     setLoading(true);
-    const responseRegister: ResponseRegister = await fetchData(
+    const responseLogin: ResponseRegisterAndLogin = await fetchData(
       `${url}/api/login`,
       'POST',
       formData,
     );
 
-    if (responseRegister.error) {
-      setErr(responseRegister.error.message);
+    if (responseLogin.error) {
+      setErr(responseLogin.error.message);
       setLoading(false);
       return;
     }
 
-    if (responseRegister.data?.token) {
-      localStorage.setItem('token', responseRegister.data.token);
+    if (responseLogin.data?.accessToken && responseLogin.data.refreshToken) {
+      localStorage.setItem('accessToken', responseLogin.data.accessToken);
+      localStorage.setItem('refreshToken', responseLogin.data.refreshToken);
       window.location.href = '/';
     } else {
       setErr('No token returned');

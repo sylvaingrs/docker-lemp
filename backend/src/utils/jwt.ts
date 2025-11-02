@@ -3,16 +3,15 @@ import jwt, { JwtPayload } from 'jsonwebtoken';
 interface TokenPayload extends JwtPayload {
   userId: number;
   email: string;
+  type?: string;
 }
 
-export function generateToken(payload: object) {
+export function generateToken(payload: object, expiresIn?: number) {
   const secret: jwt.Secret = process.env.JWT_SECRET || '';
 
   if (!secret) {
     throw new Error('JWT_SECRET is not defined in environment variables');
   }
-
-  const expiresIn: number = Number(process.env.JWT_EXPIRES_IN) || 900;
 
   const token = jwt.sign(payload, secret, { expiresIn });
 
@@ -28,9 +27,11 @@ export function verifyToken(token: string): TokenPayload | null {
 
   try {
     const decoded = jwt.verify(token, secret);
+
     if (typeof decoded === 'string') {
       return null;
     }
+
     if (!decoded.userId || !decoded.email) {
       return null;
     }

@@ -6,7 +6,7 @@ import mysql, { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import dotenv from 'dotenv';
 
 import { comparePassword, hashPassword } from './utils/password';
-import { generateToken } from './utils/jwt';
+import { generateToken, verifyToken } from './utils/jwt';
 import { authenticateToken } from './middleware/auth';
 
 const app = express();
@@ -151,6 +151,13 @@ type UserEmailHashPasswordRow = RowDataPacket & {
   hash_password: string;
 };
 
+type RefreshTokenRow = RowDataPacket & {
+  id: number;
+  user_id: number;
+  token: string;
+  expires_at: Date;
+};
+
 app.post('/api/login', async (req, res) => {
   const { email, password } = req.body;
   try {
@@ -175,11 +182,22 @@ app.post('/api/login', async (req, res) => {
       return res.status(401).json({ error: 'Password incorrect' });
     }
 
-    const token = generateToken({ userId: user.id, email: user.email });
+    const tokenExpiry = Number(process.env.JWT_EXPIRES_IN) || 300;
+    const refreshTokenExpiry = Number(process.env.JWT_REFRESH_EXPIRES_IN) || 10080;
+
+    const accessToken = generateToken({ userId: user.id, email: user.email }, tokenExpiry);
+
+    const refreshToken = generateToken({ userId: user.id, type: 'refresh' }, refreshTokenExpiry);
+
+    await pool.query(
+      `INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY))`,
+      [user.id, refreshToken],
+    );
 
     res.json({
       message: 'Login suceed',
-      token: token,
+      accessToken,
+      refreshToken,
     });
   } catch (error) {
     return res.status(500).json({ message: `Database error: ${error}` });
@@ -191,6 +209,11 @@ type UserEmail = RowDataPacket & { email: string };
 app.post('/api/register', async (req, res) => {
   try {
     const { email, password, name } = req.body;
+
+    if (!email || !password || !name) {
+      return res.status(400).json({ message: 'Missing required fields' });
+    }
+
     const [rows] = await pool.query<UserEmail[]>(`SELECT email FROM users WHERE users.email = ?`, [
       email,
     ]);
@@ -208,9 +231,21 @@ app.post('/api/register', async (req, res) => {
 
     const userId = result.insertId;
 
-    const token = generateToken({ userId, email });
+    const tokenExpiry = Number(process.env.JWT_EXPIRES_IN) || 300;
+    const refreshTokenExpiry = Number(process.env.JWT_REFRESH_EXPIRES_IN) || 10080;
 
-    return res.status(201).json({ message: 'Account successfully created', token });
+    const accessToken = generateToken({ userId, email }, tokenExpiry);
+
+    const refreshToken = generateToken({ userId, type: 'refresh' }, refreshTokenExpiry);
+
+    await pool.query(
+      `INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY))`,
+      [userId, refreshToken],
+    );
+
+    return res
+      .status(201)
+      .json({ message: 'Account successfully created', accessToken, refreshToken });
   } catch (err) {
     console.log('error : ', err);
     return res.status(500).json({ message: 'Internal server error' });
@@ -222,6 +257,42 @@ app.get('/api/auth/verify', authenticateToken, (req, res) => {
     authenticated: true,
     user: req.user,
   });
+});
+
+app.post('/api/auth/refresh', async (req, res) => {
+  const { refreshToken } = req.body;
+
+  if (!refreshToken) {
+    return res.status(401).json({ error: 'Refresh token missing' });
+  }
+
+  const decoded = verifyToken(refreshToken);
+
+  if (!decoded || decoded.type !== 'refresh') {
+    return res.status(401).json({ error: 'Invalid refresh token' });
+  }
+
+  try {
+    const [rows] = await pool.query<RefreshTokenRow[]>(
+      'SELECT * FROM refresh_tokens WHERE token = ? AND expires_at > NOW()',
+      [refreshToken],
+    );
+
+    if (rows.length === 0) {
+      return res.status(401).json({ error: 'Refresh token expired or revoked' });
+    }
+    const refreshTokenExpiry = Number(process.env.JWT_REFRESH_EXPIRES_IN) || 10080;
+
+    const newAccessToken = generateToken(
+      { userId: decoded.userId, email: decoded.email },
+      refreshTokenExpiry,
+    );
+
+    res.json({ accessToken: newAccessToken });
+  } catch (error) {
+    console.error('Refresh error:', error);
+    return res.status(500).json({ message: 'Database error' });
+  }
 });
 
 async function startServer() {

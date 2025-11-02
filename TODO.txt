@@ -1,0 +1,11 @@
+Pour projet raspberry pi : 
+
+Refresh token : 
+
+Les httpOnly cookies (plus sécurisé que localStorage)
+La rotation des refresh tokens (encore plus sécurisé)
+Le token blacklisting (pour la déconnexion)
+
+voir pour bloquer les attaques DDOS
+
+debug pourquoi le refresh marche pas.
