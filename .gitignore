@@ -5,10 +5,13 @@
 # Volumes Docker (NE JAMAIS COMMIT !)
 nginx/certs/
 nginx/acme/
+
+
+
 mariadb/data
 mariadb/dumps/*.sql
 !mariadb/dumps/.gitkeep
-
+!mariadb/dumps/init.sql
 # Node modules
 **/node_modules/
 **/dist/
