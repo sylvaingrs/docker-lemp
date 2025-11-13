@@ -1,5 +1,5 @@
 import path from 'path';
-
+import cookieParser from 'cookie-parser';
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import mysql, { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
@@ -26,6 +26,7 @@ app.use(
   }),
 );
 app.use(express.json());
+app.use(cookieParser());
 
 const dbConfig = {
   host: isDev ? 'localhost' : process.env.DB_HOST || 'mariadb',
@@ -201,10 +202,16 @@ app.post('/api/login', async (req, res) => {
       [user.id, refreshToken],
     );
 
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
     res.json({
-      message: 'Login suceed',
+      message: 'Login successful',
       accessToken,
-      refreshToken,
     });
   } catch (error) {
     return res.status(500).json({ message: `Database error: ${error}` });
@@ -249,10 +256,14 @@ app.post('/api/register', async (req, res) => {
       `INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY))`,
       [userId, refreshToken],
     );
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
 
-    return res
-      .status(201)
-      .json({ message: 'Account successfully created', accessToken, refreshToken });
+    return res.status(201).json({ message: 'Account successfully created', accessToken });
   } catch (err) {
     console.log('error : ', err);
     return res.status(500).json({ message: 'Internal server error' });
@@ -267,7 +278,7 @@ app.get('/api/auth/verify', authenticateToken, (req, res) => {
 });
 
 app.post('/api/auth/refresh', async (req, res) => {
-  const { refreshToken } = req.body;
+  const refreshToken = req.cookies.refreshToken;
 
   if (!refreshToken) {
     return res.status(401).json({ error: 'Refresh token missing' });
@@ -305,13 +316,21 @@ app.post('/api/auth/refresh', async (req, res) => {
       tokenExpiry,
     );
 
-    console.log(`✅ Nouveau access token généré pour userId ${decoded.userId}`);
-
     res.json({ accessToken: newAccessToken });
   } catch (error) {
     console.error('Refresh error:', error);
     return res.status(500).json({ message: 'Database error' });
   }
+});
+
+app.post('/api/logout', (req, res) => {
+  res.clearCookie('refreshToken', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+  });
+
+  res.json({ message: 'Logged out successfully' });
 });
 
 async function startServer() {
