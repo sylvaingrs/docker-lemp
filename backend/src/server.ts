@@ -1,69 +1,12 @@
-import path from 'path';
+import { Request, Response } from 'express';
+import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 
-import express, { Request, Response } from 'express';
-import cors from 'cors';
-import mysql, { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
-import dotenv from 'dotenv';
-
-import { comparePassword, hashPassword } from './utils/password';
+import { comparePassword, hashPassword } from './utils/hash';
 import { generateToken, verifyToken } from './utils/jwt';
 import { authenticateToken } from './middleware/auth';
+import app, { apiUrl, dbConfig, initDatabase, pool } from './app';
 
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-const isDev = process.env.NODE_ENV === 'development';
-const apiUrl: string = isDev ? 'http://localhost:3000' : 'https://api.sylvain-nas.ovh';
-
-if (isDev) dotenv.config({ path: path.resolve(__dirname, './utils/.env') });
-
-app.use(
-  cors({
-    origin: isDev
-      ? ['http://localhost:5173', 'http://localhost:3000'] // Dev
-      : [`https://${process.env.DOMAIN}`, `https://www.${process.env.DOMAIN}`], // Prod
-    credentials: true,
-  }),
-);
-app.use(express.json());
-
-const dbConfig = {
-  host: isDev ? 'localhost' : process.env.DB_HOST || 'mariadb',
-  port: parseInt(process.env.DB_PORT || '3306'),
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-};
-
-let pool: mysql.Pool;
-
-async function initDatabase() {
-  const maxRetries = 30;
-  const retryDelay = 3000;
-
-  try {
-    for (let i = 0; i < maxRetries; i++) {
-      try {
-        pool = mysql.createPool(dbConfig);
-        await pool.query('SELECT 1');
-        console.log('Connection to MariaDb succeed');
-        return;
-      } catch (error) {
-        console.log(
-          `Tentative ${i + 1}/${maxRetries} - MariaDB not ready yet, next try in ${retryDelay / 1000}s...`,
-        );
-        if (i === maxRetries - 1) {
-          console.error('Impossible to connect to MariaDb after ', maxRetries, ' tentatives');
-          console.error('Connection error to MariaDb: ', error);
-        } else {
-          await new Promise((resolve) => setTimeout(resolve, retryDelay));
-        }
-      }
-    }
-  } catch (error) {
-    console.error('Connection error to MariaDb: ', error);
-  }
-}
+export const PORT = process.env.PORT || 3000;
 
 app.get('/health', (req: Request, res: Response) => {
   res.json({
@@ -97,22 +40,11 @@ app.get('/hello/:name', (req: Request, res: Response) => {
   });
 });
 
-app.post('/test', (req: Request, res: Response) => {
+app.post('/api/test', authenticateToken, (req: Request, res: Response) => {
   const data = req.body;
   res.json({
     message: 'Data received',
     received: data,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-app.get('/status', authenticateToken, (req: Request, res: Response) => {
-  res.json({
-    status: 'running',
-    uptime: process.uptime(),
-    memory: process.memoryUsage(),
-    platform: process.platform,
-    nodeVersion: process.version,
     timestamp: new Date().toISOString(),
   });
 });
@@ -162,7 +94,7 @@ type EmailRow = RowDataPacket & {
   email: string;
 };
 
-app.post('/api/login', async (req, res) => {
+app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body;
   try {
     const [rows] = await pool.query<UserEmailHashPasswordRow[]>(
@@ -201,10 +133,16 @@ app.post('/api/login', async (req, res) => {
       [user.id, refreshToken],
     );
 
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
     res.json({
-      message: 'Login suceed',
+      message: 'Login successful',
       accessToken,
-      refreshToken,
     });
   } catch (error) {
     return res.status(500).json({ message: `Database error: ${error}` });
@@ -213,7 +151,7 @@ app.post('/api/login', async (req, res) => {
 
 type UserEmail = RowDataPacket & { email: string };
 
-app.post('/api/register', async (req, res) => {
+app.post('/api/auth/register', async (req, res) => {
   try {
     const { email, password, name } = req.body;
 
@@ -249,10 +187,14 @@ app.post('/api/register', async (req, res) => {
       `INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY))`,
       [userId, refreshToken],
     );
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
 
-    return res
-      .status(201)
-      .json({ message: 'Account successfully created', accessToken, refreshToken });
+    return res.status(201).json({ message: 'Account successfully created', accessToken });
   } catch (err) {
     console.log('error : ', err);
     return res.status(500).json({ message: 'Internal server error' });
@@ -267,7 +209,7 @@ app.get('/api/auth/verify', authenticateToken, (req, res) => {
 });
 
 app.post('/api/auth/refresh', async (req, res) => {
-  const { refreshToken } = req.body;
+  const refreshToken = req.cookies.refreshToken;
 
   if (!refreshToken) {
     return res.status(401).json({ error: 'Refresh token missing' });
@@ -305,8 +247,6 @@ app.post('/api/auth/refresh', async (req, res) => {
       tokenExpiry,
     );
 
-    console.log(`✅ Nouveau access token généré pour userId ${decoded.userId}`);
-
     res.json({ accessToken: newAccessToken });
   } catch (error) {
     console.error('Refresh error:', error);
@@ -314,8 +254,18 @@ app.post('/api/auth/refresh', async (req, res) => {
   }
 });
 
+app.post('/api/logout', (req, res) => {
+  res.clearCookie('refreshToken', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+  });
+
+  res.json({ message: 'Logged out successfully' });
+});
+
 async function startServer() {
-  await initDatabase();
+  await initDatabase(dbConfig);
 
   app.listen(PORT, () => {
     console.log(`Server started on port ${PORT}`);
