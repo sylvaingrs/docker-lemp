@@ -17,9 +17,8 @@ export default function Status() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const apiUrlHealth: string = (import.meta as any).env.DEV
-    ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ? 
       `${(import.meta as any).env.VITE_API_URL}/health`
     : `${window.location.protocol}//api.${window.location.hostname}/health`;
 
@@ -27,7 +26,9 @@ export default function Status() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(apiUrlHealth);
+      const res = await fetch(apiUrlHealth, {
+        credentials: 'include',
+      });
       if (!res.ok) throw new Error('API error');
       const apiData = await res.json();
       setDataHealth(apiData);

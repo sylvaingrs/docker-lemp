@@ -28,6 +28,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
       try {
         const response = await fetch(`${url}/api/auth/verify`, {
           headers: { Authorization: `Bearer ${token}` },
+          credentials: 'include'
         });
 
         if (response.ok) {
@@ -40,18 +41,15 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
             setIsAuthenticated(true);
           } else {
             localStorage.removeItem('accessToken');
-            localStorage.removeItem('refreshToken');
             window.location.href = '/login';
           }
         } else {
           localStorage.removeItem('accessToken');
-          localStorage.removeItem('refreshToken');
           window.location.href = '/login';
         }
       } catch (e) {
         console.log('error:', e);
         localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
         window.location.href = '/login';
       } finally {
         setLoading(false);

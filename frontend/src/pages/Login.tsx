@@ -25,9 +25,8 @@ export default function Login() {
       return;
     }
 
-    if (responseLogin.data?.accessToken && responseLogin.data.refreshToken) {
+    if (responseLogin.data?.accessToken) {
       localStorage.setItem('accessToken', responseLogin.data.accessToken);
-      localStorage.setItem('refreshToken', responseLogin.data.refreshToken);
       window.location.href = '/';
     } else {
       setErr('No token returned');

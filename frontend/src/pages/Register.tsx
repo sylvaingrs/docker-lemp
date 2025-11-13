@@ -27,9 +27,8 @@ export default function Register() {
       return;
     }
 
-    if (responseRegister.data?.accessToken && responseRegister.data.refreshToken) {
+    if (responseRegister.data?.accessToken) {
       localStorage.setItem('accessToken', responseRegister.data.accessToken);
-      localStorage.setItem('refreshToken', responseRegister.data.refreshToken);
       alert('Account successfully created');
       window.location.href = '/';
     } else {
