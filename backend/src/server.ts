@@ -158,6 +158,10 @@ type RefreshTokenRow = RowDataPacket & {
   expires_at: Date;
 };
 
+type EmailRow = RowDataPacket & {
+  email: string;
+};
+
 app.post('/api/login', async (req, res) => {
   const { email, password } = req.body;
   try {
@@ -185,7 +189,10 @@ app.post('/api/login', async (req, res) => {
     const tokenExpiry = Number(process.env.JWT_EXPIRES_IN) || 300;
     const refreshTokenExpiry = Number(process.env.JWT_REFRESH_EXPIRES_IN) || 10080;
 
-    const accessToken = generateToken({ userId: user.id, email: user.email }, tokenExpiry);
+    const accessToken = generateToken(
+      { userId: user.id, email: user.email, type: 'access' },
+      tokenExpiry,
+    );
 
     const refreshToken = generateToken({ userId: user.id, type: 'refresh' }, refreshTokenExpiry);
 
@@ -234,7 +241,7 @@ app.post('/api/register', async (req, res) => {
     const tokenExpiry = Number(process.env.JWT_EXPIRES_IN) || 300;
     const refreshTokenExpiry = Number(process.env.JWT_REFRESH_EXPIRES_IN) || 10080;
 
-    const accessToken = generateToken({ userId, email }, tokenExpiry);
+    const accessToken = generateToken({ userId, email, type: 'access' }, tokenExpiry);
 
     const refreshToken = generateToken({ userId, type: 'refresh' }, refreshTokenExpiry);
 
@@ -281,12 +288,24 @@ app.post('/api/auth/refresh', async (req, res) => {
     if (rows.length === 0) {
       return res.status(401).json({ error: 'Refresh token expired or revoked' });
     }
-    const refreshTokenExpiry = Number(process.env.JWT_REFRESH_EXPIRES_IN) || 10080;
 
+    const [userRows] = await pool.query<EmailRow[]>('SELECT email FROM users WHERE id = ?', [
+      decoded.userId,
+    ]);
+
+    if (userRows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const userEmail = userRows[0].email;
+
+    const tokenExpiry = Number(process.env.JWT_EXPIRES_IN) || 300;
     const newAccessToken = generateToken(
-      { userId: decoded.userId, email: decoded.email },
-      refreshTokenExpiry,
+      { userId: decoded.userId, email: userEmail, type: 'access' },
+      tokenExpiry,
     );
+
+    console.log(`✅ Nouveau access token généré pour userId ${decoded.userId}`);
 
     res.json({ accessToken: newAccessToken });
   } catch (error) {

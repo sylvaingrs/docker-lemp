@@ -1,13 +1,20 @@
 import jwt, { JwtPayload } from 'jsonwebtoken';
 
-interface TokenPayload extends JwtPayload {
+interface AccessTokenPayload extends JwtPayload {
   userId: number;
   email: string;
-  type?: string;
+  type: 'access';
 }
 
-export function generateToken(payload: object, expiresIn?: number) {
-  const secret: jwt.Secret = process.env.JWT_SECRET || '';
+interface RefreshTokenPayload extends JwtPayload {
+  userId: number;
+  type: 'refresh';
+}
+
+export type AnyTokenPayload = AccessTokenPayload | RefreshTokenPayload;
+
+export function generateToken(payload: AnyTokenPayload, expiresIn?: number): string {
+  const secret = process.env.JWT_SECRET;
 
   if (!secret) {
     throw new Error('JWT_SECRET is not defined in environment variables');
@@ -18,7 +25,7 @@ export function generateToken(payload: object, expiresIn?: number) {
   return token;
 }
 
-export function verifyToken(token: string): TokenPayload | null {
+export function verifyToken(token: string): AnyTokenPayload | null {
   const secret = process.env.JWT_SECRET;
 
   if (!secret) {
@@ -27,17 +34,24 @@ export function verifyToken(token: string): TokenPayload | null {
 
   try {
     const decoded = jwt.verify(token, secret);
-
-    if (typeof decoded === 'string') {
+    if (typeof decoded === 'string' || !('userId' in decoded) || !('type' in decoded)) {
       return null;
     }
 
-    if (!decoded.userId || !decoded.email) {
-      return null;
+    if (decoded.type === 'access') {
+      if (!('email' in decoded) || typeof decoded.email !== 'string') {
+        return null;
+      }
+      return decoded as AccessTokenPayload;
     }
 
-    return decoded as TokenPayload;
+    if (decoded.type === 'refresh') {
+      return decoded as RefreshTokenPayload;
+    }
+
+    return null;
   } catch (error) {
+    console.error('verifyToken error:', error);
     return null;
   }
 }

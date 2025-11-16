@@ -2,7 +2,7 @@ import { url } from './utils';
 
 export async function refreshAccessToken(): Promise<string | null> {
   const refreshToken = localStorage.getItem('refreshToken');
-
+  console.log('refresh token : ', refreshToken);
   if (!refreshToken) {
     return null;
   }
