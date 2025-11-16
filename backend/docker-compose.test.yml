@@ -1,4 +1,3 @@
-version: '3.9'
 services:
   mariadb-test:
     image: mariadb:11

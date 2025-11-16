@@ -5,6 +5,9 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import mysql, { Pool } from 'mysql2/promise';
+import mainRoutes from './routes/main.routes';
+import authRoutes from './routes/auth.routes';
+import userRoutes from './routes/user.routes';
 
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -20,11 +23,15 @@ app.use(
 app.use(express.json());
 app.use(cookieParser());
 
+app.use('/', mainRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api', userRoutes);
+
 export const apiUrl: string = isDev ? 'http://localhost:3000' : 'https://api.sylvain-nas.ovh';
 
 if (isDev) dotenv.config({ path: path.resolve(__dirname, './utils/.env') });
 
-export const dbConfig = {
+export const dbConfig: DbConfig = {
   host: isDev ? 'localhost' : process.env.DB_HOST || 'mariadb',
   port: parseInt(process.env.DB_PORT || '3306'),
   user: process.env.DB_USER,
@@ -32,18 +39,26 @@ export const dbConfig = {
   database: process.env.DB_NAME,
 };
 
+export interface DbConfig {
+  host: string;
+  port: number;
+  user: string | undefined;
+  password: string | undefined;
+  database: string | undefined;
+}
+
 export default app;
 
 export let pool: Pool | null = null;
 
-export async function initDatabase(config: unknown) {
+export async function initDatabase(config: DbConfig) {
   const maxRetries = 30;
   const retryDelay = 3000;
 
   try {
     for (let i = 0; i < maxRetries; i++) {
       try {
-        pool = mysql.createPool(dbConfig);
+        pool = mysql.createPool(config);
         await pool.query('SELECT 1');
         console.log('Connection to MariaDb succeed');
         return;

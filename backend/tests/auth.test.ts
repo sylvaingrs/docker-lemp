@@ -17,6 +17,7 @@ describe('Auth API', () => {
     const response = await request(app)
       .post('/api/auth/register')
       .send({
+        name: 'Test User',
         email: `test${Date.now()}@example.com`,
         password: 'password123',
       });
@@ -26,8 +27,9 @@ describe('Auth API', () => {
   });
 
   it('should login and return accessToken + refresh cookie', async () => {
+    const name = 'Test User';
     const email = `login${Date.now()}@example.com`;
-    await request(app).post('/api/auth/register').send({ email, password: 'test1234' });
+    await request(app).post('/api/auth/register').send({ name, email, password: 'test1234' });
 
     const res = await request(app).post('/api/auth/login').send({ email, password: 'test1234' });
 
@@ -40,8 +42,10 @@ describe('Auth API', () => {
   });
 
   it('should access protected route with valid token', async () => {
+    const name = 'Test User';
+
     const email = `secure${Date.now()}@example.com`;
-    await request(app).post('/api/auth/register').send({ email, password: 'securepass' });
+    await request(app).post('/api/auth/register').send({ name, email, password: 'securepass' });
 
     const loginRes = await request(app)
       .post('/api/auth/login')
