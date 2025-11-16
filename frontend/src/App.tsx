@@ -42,9 +42,17 @@ function AppLayout() {
           Utilisateurs
         </Link>
         <Button
-          onClick={() => {
+          onClick={async () => {
+            try {
+              await fetch('/api/logout', {
+                method: 'POST',
+                credentials: 'include',
+              });
+            } catch (err) {
+              console.error('Logout error:', err);
+            }
             localStorage.removeItem('accessToken');
-            localStorage.removeItem('refreshToken');
+
             window.location.href = '/login';
           }}
           className="hover:underline"
