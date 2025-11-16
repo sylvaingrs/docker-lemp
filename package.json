@@ -6,11 +6,11 @@
     "lint": "eslint . --ext ts,tsx,js,jsx --max-warnings=0",
     "lint:fix": "eslint . --ext ts,tsx,js,jsx --fix",
     "format": "prettier --write .",
-    "db:export:dev": "mysqldump --skip-tz-utc --no-tablespaces  -h127.0.0.1 -P3306 -uappuser -pmypassword appdb > $(node scripts/db-path.js)",
-    "db:import:dev": "mysql -h127.0.0.1 -P3306 -uappuser -pmypassword appdb < $(node scripts/db-path.js)",
-    "db:export:prod": "docker exec mariadb mariadb-dump --skip-tz-utc -uappuser -pmypassword appdb > $(node scripts/db-path.js)",
-    "db:import:prod": "docker exec -i mariadb mariadb -uappuser -pmypassword appdb < $(node scripts/db-path.js)",
-    "db:import:test": "mysql -h127.0.0.1 -P3307 -uapptestuser -pmytestpassword apptestdb < mariadb/dumps/test-empty.sql"
+"db:export:dev": "mysqldump --skip-tz-utc --no-tablespaces -h127.0.0.1 -P3306 -uappuser -pmypassword appdb > $(node scripts/db-path.js)",
+"db:import:dev": "mysql -h127.0.0.1 -P3306 -uappuser -pmypassword appdb < $(node scripts/db-path.js)",
+"db:export:prod": "docker exec mariadb mariadb-dump --skip-tz-utc -uappuser -pmypassword appdb > $(node scripts/db-path.js)",
+"db:import:prod": "docker exec -i mariadb mariadb -uappuser -pmypassword appdb < $(node scripts/db-path.js)",
+"db:import:test": "mysql -h127.0.0.1 -P3307 -uapptestuser -pmytestpassword apptestdb < mariadb/dumps/test-empty.sql"
   },
   "devDependencies": {
     "tailwindcss-animate": "^1.0.7"
