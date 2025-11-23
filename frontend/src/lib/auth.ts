@@ -19,7 +19,7 @@ export async function refreshAccessToken(): Promise<string | null> {
 
     return data.accessToken;
   } catch (error) {
-    console.error('Refresh error:', error);
+    console.error('refreshAccessToken: Refresh error:', error);
     localStorage.removeItem('accessToken');
     return null;
   }

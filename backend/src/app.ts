@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import mysql, { Pool } from 'mysql2/promise';
+
 import mainRoutes from './routes/main.routes';
 import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
@@ -15,8 +16,8 @@ const app = express();
 app.use(
   cors({
     origin: isDev
-      ? ['http://localhost:5173', 'http://localhost:3000'] // Dev
-      : [`https://${process.env.DOMAIN}`, `https://www.${process.env.DOMAIN}`], // Prod
+      ? ['http://localhost:5173', 'http://localhost:3000']
+      : [`https://${process.env.DOMAIN}`, `https://www.${process.env.DOMAIN}`],
     credentials: true,
   }),
 );
