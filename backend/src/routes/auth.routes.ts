@@ -5,6 +5,7 @@ import { pool } from '../app';
 import { comparePassword, hashPassword } from '../utils/hash';
 import { generateToken, verifyToken } from '../utils/jwt';
 import { authenticateToken } from '../middleware/auth';
+import { REFRESH_TOKEN_MAX_AGE, REFRESH_TOKEN_OPTIONS } from '../utils/cookie.config';
 
 type UserEmailHashPasswordRow = RowDataPacket & {
   id: number;
@@ -65,10 +66,8 @@ router.post('/login', async (req, res) => {
     );
 
     res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      ...REFRESH_TOKEN_OPTIONS,
+      maxAge: REFRESH_TOKEN_MAX_AGE,
     });
 
     res.json({
@@ -119,10 +118,8 @@ router.post('/register', async (req, res) => {
       [userId, refreshToken],
     );
     res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      ...REFRESH_TOKEN_OPTIONS,
+      maxAge: REFRESH_TOKEN_MAX_AGE,
     });
 
     return res.status(201).json({ message: 'Account successfully created', accessToken });
@@ -180,18 +177,14 @@ router.post('/refresh', async (req, res) => {
 
     res.json({ accessToken: newAccessToken });
   } catch (error) {
-    console.error('Refresh error:', error);
+    console.error('/refresh: Refresh error:', error);
     return res.status(500).json({ message: 'Database error' });
   }
 });
 
 router.post('/logout', (req, res) => {
-  res.clearCookie('refreshToken', {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-  });
-
+  res.clearCookie('refreshToken', REFRESH_TOKEN_OPTIONS);
+  console.log('test : ', REFRESH_TOKEN_OPTIONS);
   res.json({ message: 'Logged out successfully' });
 });
 
