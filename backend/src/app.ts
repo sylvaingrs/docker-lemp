@@ -19,6 +19,8 @@ app.use(
       ? ['http://localhost:5173', 'http://localhost:3000']
       : [`https://${process.env.DOMAIN}`, `https://www.${process.env.DOMAIN}`],
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   }),
 );
 app.use(express.json());
