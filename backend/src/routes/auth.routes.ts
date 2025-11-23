@@ -184,7 +184,6 @@ router.post('/refresh', async (req, res) => {
 
 router.post('/logout', (req, res) => {
   res.clearCookie('refreshToken', REFRESH_TOKEN_OPTIONS);
-  console.log('test : ', REFRESH_TOKEN_OPTIONS);
   res.json({ message: 'Logged out successfully' });
 });
 
