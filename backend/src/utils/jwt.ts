@@ -51,7 +51,6 @@ export function verifyToken(token: string): AnyTokenPayload | null {
 
     return null;
   } catch (error) {
-    // console.error('verifyToken error:', error);
     return null;
   }
 }

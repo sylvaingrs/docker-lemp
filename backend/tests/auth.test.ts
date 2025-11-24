@@ -1,7 +1,5 @@
 import request from 'supertest';
 
-import { App } from 'supertest/types';
-
 import app, { dbConfig, initDatabase, pool } from '../src/app';
 
 beforeAll(async () => {
