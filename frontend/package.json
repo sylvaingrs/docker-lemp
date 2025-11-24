@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "NODE_ENV=develoment vite",
-    "build": "NODE_ENV=develoment tsc -b && vite build",
+    "build": "tsc -b && vite build",
     "preview": "vite preview",
     "test": "vitest",
     "test:ui": "vitest --ui",

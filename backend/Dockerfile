@@ -11,7 +11,7 @@ RUN npm run build
 
 RUN npm prune --omit=dev
 
-COPY ../.env .env
+#COPY ../.env .env
 
 # RUN npx prisma generate
 
