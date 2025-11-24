@@ -1,8 +1,8 @@
 {
   "type": "module",
   "scripts": {
-    "up:prod": "docker compose up -d --build",
-    "down:prod": "docker compose down",
+    "up:prod": "NODE_ENV=production docker compose up -d --build",
+    "down:prod": "NODE_ENV=production docker compose down",
     "lint": "eslint . --ext ts,tsx,js,jsx --max-warnings=0",
     "lint:fix": "eslint . --ext ts,tsx,js,jsx --fix",
     "format": "prettier --write .",

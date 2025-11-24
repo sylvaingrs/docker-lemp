@@ -1,8 +1,8 @@
-import { url } from './utils';
+import { mainUrl } from './utils';
 
 export async function refreshAccessToken(): Promise<string | null> {
   try {
-    const response = await fetch(`${url}/api/auth/refresh`, {
+    const response = await fetch(`${mainUrl}/api/auth/refresh`, {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },

@@ -1,5 +1,5 @@
 import { refreshAccessToken } from '@/lib/auth';
-import { url } from '@/lib/utils';
+import { mainUrl } from '@/lib/utils';
 import React, { useEffect, useState } from 'react';
 
 interface ProtectedRouteProps {
@@ -25,9 +25,9 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
       }
 
       try {
-        const response = await fetch(`${url}/api/auth/verify`, {
+        const response = await fetch(`${mainUrl}/api/auth/verify`, {
           headers: { Authorization: `Bearer ${token}` },
-          credentials: 'include'
+          credentials: 'include',
         });
 
         if (response.ok) {

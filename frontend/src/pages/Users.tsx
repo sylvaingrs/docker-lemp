@@ -1,5 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { fetchData, url } from '@/lib/utils';
+import { fetchData, mainUrl } from '@/lib/utils';
 import { useEffect, useState } from 'react';
 
 interface User {
@@ -13,7 +13,7 @@ export default function Users() {
 
   useEffect(() => {
     const loadUsers = async () => {
-      const { data, error } = await fetchData<User[]>(`${url}/api/users`, 'GET');
+      const { data, error } = await fetchData<User[]>(`${mainUrl}/api/users`, 'GET');
       if (error) {
         setError(error.message);
       } else if (data) {

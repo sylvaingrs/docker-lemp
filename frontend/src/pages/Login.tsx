@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import AuthCardLayout from '@/components/layout/AuthCardLayout';
-import { fetchData, ResponseRegisterAndLogin, url } from '@/lib/utils';
+import { fetchData, ResponseRegisterAndLogin, mainUrl } from '@/lib/utils';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -14,7 +14,7 @@ export default function Login() {
     setErr('');
     setLoading(true);
     const responseLogin: ResponseRegisterAndLogin = await fetchData(
-      `${url}/api/auth/login`,
+      `${mainUrl}/api/auth/login`,
       'POST',
       formData,
     );

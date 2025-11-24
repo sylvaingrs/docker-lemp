@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import AuthCardLayout from '@/components/layout/AuthCardLayout';
-import { fetchData, ResponseRegisterAndLogin, url } from '@/lib/utils';
+import { fetchData, ResponseRegisterAndLogin, mainUrl } from '@/lib/utils';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -15,7 +15,7 @@ export default function Register() {
     setErr('');
     setLoading(true);
     const responseRegister: ResponseRegisterAndLogin = await fetchData(
-      `${url}/api/auth/register`,
+      `${mainUrl}/api/auth/register`,
       'POST',
       formData,
     );

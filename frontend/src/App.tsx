@@ -8,7 +8,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Button } from './components/ui/button';
-import { url } from './lib/utils';
+import { mainUrl } from './lib/utils';
 
 function App() {
   return (
@@ -45,7 +45,7 @@ function AppLayout() {
         <Button
           onClick={async () => {
             try {
-              await fetch(`${url}/api/auth/logout`, {
+              await fetch(`${mainUrl}/api/auth/logout`, {
                 method: 'POST',
                 credentials: 'include',
               });

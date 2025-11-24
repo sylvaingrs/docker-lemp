@@ -60,8 +60,8 @@ export async function fetchData<T>(
     return { data: null, error: error instanceof Error ? error : Error('Unknow error') };
   }
 }
-
-export const url: string = (import.meta as any).env.VITE_API_URL;
+export const mainUrl: string =
+  process.env.NODE_ENV === 'production' ? 'https://api.sylvain-nas.ovh' : 'http://localhost:3000';
 
 export interface ResponseRegisterAndLogin {
   data: {

@@ -5,6 +5,7 @@ import { Badge } from '../components/ui/badge';
 import { Skeleton } from '../components/ui/skeleton';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { Button } from '../components/ui/button';
+import { mainUrl } from '@/lib/utils';
 
 interface ApiResponseHealth {
   status: string;
@@ -17,16 +18,11 @@ export default function Status() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const apiUrlHealth: string = (import.meta as any).env.DEV
-    ? 
-      `${(import.meta as any).env.VITE_API_URL}/health`
-    : `${window.location.protocol}//api.${window.location.hostname}/health`;
-
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(apiUrlHealth, {
+      const res = await fetch(`${mainUrl}/health`, {
         credentials: 'include',
       });
       if (!res.ok) throw new Error('API error');
@@ -37,7 +33,7 @@ export default function Status() {
     } finally {
       setLoading(false);
     }
-  }, [apiUrlHealth]);
+  }, []);
 
   useEffect(() => {
     fetchData();
