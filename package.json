@@ -13,6 +13,25 @@
     "db:import:test": "mysql -h127.0.0.1 -P3307 -uapptestuser -pmytestpassword apptestdb < mariadb/dumps/test-empty.sql"
   },
   "devDependencies": {
-    "tailwindcss-animate": "^1.0.7"
+    "@eslint/js": "^9.38.0",
+    "@types/bcrypt": "^6.0.0",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@typescript-eslint/eslint-plugin": "^8.46.2",
+    "@typescript-eslint/parser": "^8.46.2",
+    "eslint": "^9.38.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-prettier": "^5.5.4",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.0",
+    "prettier": "^3.6.2",
+    "tailwindcss-animate": "^1.0.7",
+    "typescript-eslint": "^8.46.2"
+  },
+  "dependencies": {
+    "react-router-dom": "^7.9.4",
+    "bcrypt": "^6.0.0",
+    "jsonwebtoken": "^9.0.2"
   }
 }

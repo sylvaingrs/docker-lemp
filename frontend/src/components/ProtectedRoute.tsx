@@ -19,7 +19,6 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         token = await refreshAccessToken();
 
         if (!token) {
-          console.log('No tokens found, redirect to login...');
           window.location.href = '/login';
           return;
         }
