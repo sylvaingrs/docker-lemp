@@ -18,7 +18,7 @@ export default function Status() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = useCallback(async () => {
+  const fetchDataFront = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -36,8 +36,8 @@ export default function Status() {
   }, []);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    fetchDataFront();
+  }, [fetchDataFront]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
@@ -83,7 +83,7 @@ export default function Status() {
                 </span>
               </div>
 
-              <Button onClick={fetchData} className="w-full" variant="default">
+              <Button onClick={fetchDataFront} className="w-full" variant="default">
                 Refresh
               </Button>
             </div>

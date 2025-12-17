@@ -9,24 +9,27 @@ export function cn(...inputs: ClassValue[]) {
 export async function fetchData<T>(
   url: string,
   method: string,
-  body?: any,
+  body?: unknown,
 ): Promise<{ data: T | null; error: Error | null }> {
   try {
     const token = localStorage.getItem('accessToken');
 
-    const res = await fetch(url, {
-      method: method,
+    const options: RequestInit = {
+      method,
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
         ...(token && { Authorization: `Bearer ${token}` }),
       },
-      ...(body && { body: JSON.stringify(body) }),
-    });
+    };
+
+    if (body) {
+      options.body = JSON.stringify(body);
+    }
+
+    let res = await fetch(url, options);
 
     if (res.status === 401) {
-      console.log('Access token expired, trying to refresh...');
-
       const newToken = await refreshAccessToken();
 
       if (!newToken) {
@@ -34,22 +37,18 @@ export async function fetchData<T>(
         throw new Error('Session expired');
       }
 
-      const retryRes = await fetch(url, {
-        method: method,
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${newToken}`,
-        },
-        ...(body && { body: JSON.stringify(body) }),
-      });
+      options.headers = {
+        ...options.headers,
+        Authorization: `Bearer ${newToken}`,
+      };
 
-      if (!retryRes.ok) {
-        throw new Error(`HTTP ${retryRes.status} - ${retryRes.statusText}`);
+      res = await fetch(url, options);
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status} - ${res.statusText}`);
       }
 
-      const retryData = await retryRes.json();
-      return { data: retryData, error: null };
+      return { data: await res.json(), error: null };
     }
 
     if (!res.ok) throw new Error(`HTTP ${res.status} - ${res.statusText}`);
@@ -70,4 +69,24 @@ export interface ResponseRegisterAndLogin {
     refreshToken: string | null;
   } | null;
   error: Error | null;
+}
+
+export type UserInfo = {
+  id: number;
+  name: string;
+  email: string;
+};
+
+export async function getUserInfo(): Promise<UserInfo> {
+  const { data, error } = await fetchData<UserInfo>(`${mainUrl}/api/me`, 'GET');
+
+  if (error) {
+    throw error;
+  }
+
+  if (!data) {
+    throw new Error('No user data returned');
+  }
+
+  return data;
 }

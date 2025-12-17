@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import mysql, { Pool } from 'mysql2/promise';
+import rateLimit from 'express-rate-limit';
 
 import mainRoutes from './routes/main.routes';
 import authRoutes from './routes/auth.routes';
@@ -13,6 +14,16 @@ import userRoutes from './routes/user.routes';
 const isDev = process.env.NODE_ENV === 'development';
 
 const app = express();
+
+const limiter = rateLimit({
+  windowMs: 1 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use(limiter);
+
 app.use(
   cors({
     origin: isDev
@@ -26,10 +37,14 @@ app.use(
 app.use(express.json());
 app.use(cookieParser());
 
+app.use(function (req, res, next) {
+  console.log(`[${req.method}] : ${req.url} {${JSON.stringify(req.body)}}`);
+  next();
+});
+
 app.use('/', mainRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api', userRoutes);
-
 export const apiUrl: string = isDev ? 'http://localhost:3000' : 'https://api.sylvain-nas.ovh';
 
 if (isDev) dotenv.config({ path: path.resolve(__dirname, './utils/.env') });

@@ -1,13 +1,21 @@
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { getUserInfo, type UserInfo } from '@/lib/utils';
 import { useEffect, useState } from 'react';
 
 export default function Home() {
   const [currentTime, setCurrentTime] = useState<string>('');
   const [date, setDate] = useState<Date | undefined>(new Date());
+  const [user, setUser] = useState<UserInfo>();
+
+  const userInfo = async () => {
+    const res = await getUserInfo();
+    setUser(res);
+  };
 
   useEffect(() => {
+    userInfo();
     const interval = setInterval(() => {
       const now = new Date();
       setCurrentTime(
@@ -25,7 +33,7 @@ export default function Home() {
   return (
     <div className="container p-l space-y-l">
       <div className="text-center">
-        <h1 className="title-xl">🏠 Accueil</h1>
+        <h1 className="s-title-xl">Welcome {user?.name}</h1>
         <p className="text-gray-600">Bienvenue sur ton front React connecté à ton API Node.js.</p>
       </div>
 

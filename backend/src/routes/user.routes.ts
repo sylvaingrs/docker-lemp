@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { RowDataPacket } from 'mysql2/promise';
 
 import { authenticateToken } from '../middleware/auth';
 import { pool } from '../app';
@@ -22,6 +23,26 @@ router.get('/test', authenticateToken, (req, res) => {
   return res.json({
     email: user?.email,
   });
+});
+
+type UserData = RowDataPacket & {
+  id: number;
+  name: string;
+  email: string;
+};
+
+router.get('/me', authenticateToken, async (req, res) => {
+  const [rows] = await pool!.query<UserData[]>(
+    `SELECT id, name, email FROM users WHERE users.id=?`,
+    [req.user?.userId],
+  );
+  if (rows.length) {
+    return res.json({
+      id: rows[0].id,
+      name: rows[0].name,
+      email: rows[0].email,
+    });
+  }
 });
 
 export default router;

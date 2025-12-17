@@ -1,8 +1,4 @@
-import express, {
-  Request as ExpressRequest,
-  Response as ExpressResponse,
-  NextFunction,
-} from 'express';
+import { Request as ExpressRequest, Response as ExpressResponse, NextFunction } from 'express';
 
 import { verifyToken } from '../utils/jwt';
 

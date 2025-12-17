@@ -15,7 +15,6 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
       let token = localStorage.getItem('accessToken');
 
       if (!token) {
-        console.log('No access token, trying refresh...');
         token = await refreshAccessToken();
 
         if (!token) {
@@ -29,11 +28,9 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
           headers: { Authorization: `Bearer ${token}` },
           credentials: 'include',
         });
-
         if (response.ok) {
           setIsAuthenticated(true);
         } else if (response.status === 401) {
-          console.log('Access token expired in verify, trying refresh...');
           const newToken = await refreshAccessToken();
 
           if (newToken) {
