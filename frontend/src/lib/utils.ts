@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { refreshAccessToken } from './auth';
+import { getAccessToken, refreshAccessToken } from './auth';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -12,7 +12,7 @@ export async function fetchData<T>(
   body?: unknown,
 ): Promise<{ data: T | null; error: Error | null }> {
   try {
-    const token = localStorage.getItem('accessToken');
+    const token = getAccessToken();
 
     const options: RequestInit = {
       method,

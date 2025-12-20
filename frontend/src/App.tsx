@@ -9,6 +9,7 @@ import Register from './pages/Register';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Button } from './components/ui/button';
 import { mainUrl } from './lib/utils';
+import { clearAccessToken } from './lib/auth';
 
 function App() {
   return (
@@ -52,7 +53,7 @@ function AppLayout() {
             } catch (err) {
               console.error('Logout error:', err);
             }
-            localStorage.removeItem('accessToken');
+            clearAccessToken();
 
             window.location.href = '/login';
           }}

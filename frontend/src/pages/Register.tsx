@@ -4,6 +4,7 @@ import AuthCardLayout from '@/components/layout/AuthCardLayout';
 import { fetchData, ResponseRegisterAndLogin, mainUrl } from '@/lib/utils';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { setAccessToken } from '@/lib/auth';
 
 export default function Register() {
   const [formData, setFormData] = useState({ name: '', email: '', password: '' });
@@ -25,7 +26,7 @@ export default function Register() {
       return;
     }
     if (responseRegister.data?.accessToken) {
-      localStorage.setItem('accessToken', responseRegister.data.accessToken);
+      setAccessToken(responseRegister.data.accessToken);
       window.location.href = '/';
     } else {
       setErr('No token returned');

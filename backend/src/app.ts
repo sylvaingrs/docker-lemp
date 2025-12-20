@@ -6,6 +6,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import mysql, { Pool } from 'mysql2/promise';
 import rateLimit from 'express-rate-limit';
+import helmet from 'helmet';
 
 import mainRoutes from './routes/main.routes';
 import authRoutes from './routes/auth.routes';
@@ -23,6 +24,7 @@ const limiter = rateLimit({
 });
 
 app.use(limiter);
+app.use(helmet());
 
 app.use(
   cors({

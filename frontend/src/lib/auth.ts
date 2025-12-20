@@ -1,5 +1,17 @@
 import { mainUrl } from './utils';
 
+let accessToken: string | null = null;
+
+export const setAccessToken = (token: string) => {
+  accessToken = token;
+};
+
+export const getAccessToken = () => accessToken;
+
+export const clearAccessToken = () => {
+  accessToken = null;
+};
+
 export async function refreshAccessToken(): Promise<string | null> {
   try {
     const response = await fetch(`${mainUrl}/api/auth/refresh`, {
@@ -9,18 +21,17 @@ export async function refreshAccessToken(): Promise<string | null> {
     });
 
     if (!response.ok) {
-      localStorage.removeItem('accessToken');
+      clearAccessToken();
       return null;
     }
 
     const data = await response.json();
-
-    localStorage.setItem('accessToken', data.accessToken);
+    setAccessToken(data.accessToken);
 
     return data.accessToken;
   } catch (error) {
     console.error('refreshAccessToken: Refresh error:', error);
-    localStorage.removeItem('accessToken');
+    clearAccessToken();
     return null;
   }
 }

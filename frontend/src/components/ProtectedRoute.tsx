@@ -1,4 +1,4 @@
-import { refreshAccessToken } from '@/lib/auth';
+import { clearAccessToken, getAccessToken, refreshAccessToken } from '@/lib/auth';
 import { mainUrl } from '@/lib/utils';
 import React, { useEffect, useState } from 'react';
 
@@ -12,7 +12,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   useEffect(() => {
     const checkAuth = async () => {
-      let token = localStorage.getItem('accessToken');
+      let token = getAccessToken();
 
       if (!token) {
         token = await refreshAccessToken();
@@ -36,16 +36,16 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
           if (newToken) {
             setIsAuthenticated(true);
           } else {
-            localStorage.removeItem('accessToken');
+            clearAccessToken();
             window.location.href = '/login';
           }
         } else {
-          localStorage.removeItem('accessToken');
+          clearAccessToken();
           window.location.href = '/login';
         }
       } catch (e) {
         console.log('error:', e);
-        localStorage.removeItem('accessToken');
+        clearAccessToken();
         window.location.href = '/login';
       } finally {
         setLoading(false);
