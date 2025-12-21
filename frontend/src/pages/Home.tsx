@@ -30,7 +30,7 @@ export default function Home() {
         <h1 className="s-title-xl" data-testid="welcome-title">
           Bienvenue {loading ? '...' : user?.name || 'Invité'}
         </h1>
-        <p className="s-text-regular">Bienvenue sur ton front React connecté à ton API Node.js.</p>
+        <p className="s-text-regular">Bienvenue sur ton front React</p>
       </div>
 
       <Clock />
