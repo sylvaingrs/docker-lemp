@@ -1,0 +1,84 @@
+name: CI - Frontend & Backend Tests
+
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [master]
+
+jobs:
+  backend-tests:
+    name: Backend tests
+    runs-on: ubuntu-latest
+
+    services:
+      mariadb:
+        image: mariadb:11
+        env:
+          MYSQL_ROOT_PASSWORD: rootpassword
+          MYSQL_DATABASE: apptestdb
+          MYSQL_USER: apptestuser
+          MYSQL_PASSWORD: mytestpassword
+        ports:
+          - 3307:3306
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Wait for MariaDB
+        run: |
+          for i in {1..30}; do
+            if mysql -h127.0.0.1 -P3307 -uapptestuser -pmytestpassword apptestdb -e "SELECT 1" >/dev/null 2>&1; then
+              echo "MariaDB is ready"
+              exit 0
+            fi
+            echo "Waiting for MariaDB ($i/30)..."
+            sleep 2
+          done
+          echo "MariaDB did not become ready in time"
+          exit 1
+
+      - name: Run backend tests
+        env:
+          NODE_ENV: test
+        run: npm test
+
+  frontend-tests:
+    name: Frontend tests
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run frontend tests
+        run: npm run test -- --run
