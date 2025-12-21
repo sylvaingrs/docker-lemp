@@ -6,4 +6,5 @@ const config = {
   setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
 };
 
-export default config;
+// eslint-disable-next-line no-undef
+module.exports = config;
