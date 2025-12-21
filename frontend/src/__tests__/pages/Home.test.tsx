@@ -93,8 +93,6 @@ describe('Home', () => {
 
     render(<Home />);
 
-    expect(
-      screen.getByText('Bienvenue sur ton front React connecté à ton API Node.js.'),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Bienvenue sur ton front React')).toBeInTheDocument();
   });
 });
