@@ -3,72 +3,58 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getUserInfo, type UserInfo } from '@/lib/utils';
 import { useEffect, useState } from 'react';
+import Clock from '@/components/features/clock/Clock';
 
 export default function Home() {
-  const [currentTime, setCurrentTime] = useState<string>('');
   const [date, setDate] = useState<Date | undefined>(new Date());
-  const [user, setUser] = useState<UserInfo>();
-
-  const userInfo = async () => {
-    const res = await getUserInfo();
-    setUser(res);
-  };
+  const [user, setUser] = useState<UserInfo | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    userInfo();
-    const interval = setInterval(() => {
-      const now = new Date();
-      setCurrentTime(
-        now.toLocaleTimeString('fr-FR', {
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-        }),
-      );
-    }, 1000);
-
-    return () => clearInterval(interval);
+    const loadUserInfo = async () => {
+      try {
+        const res = await getUserInfo();
+        setUser(res);
+      } catch (error) {
+        console.error('Failed to load user info:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadUserInfo();
   }, []);
 
   return (
-    <div className="container p-l space-y-l">
-      <div className="text-center">
-        <h1 className="s-title-xl">Welcome {user?.name}</h1>
-        <p className="text-gray-600">Bienvenue sur ton front React connecté à ton API Node.js.</p>
+    <div className="s-container s-p-l s-flex s-flex-column s-gap-l">
+      <div className="s-text-center">
+        <h1 className="s-title-xl" data-testid="welcome-title">
+          Bienvenue {loading ? '...' : user?.name || 'Invité'}
+        </h1>
+        <p className="s-text-regular">Bienvenue sur ton front React connecté à ton API Node.js.</p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="title-m">🕒 Heure actuelle</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {currentTime ? (
-            <div className="title-l text-center">{currentTime}</div>
-          ) : (
-            <Skeleton className="h-10 w-full" />
-          )}
-        </CardContent>
-      </Card>
+      <Clock />
 
       <Card>
         <CardHeader>
-          <CardTitle className="title-m">📅 Calendrier</CardTitle>
+          <CardTitle className="s-title-m">📅 Calendrier</CardTitle>
         </CardHeader>
         <CardContent>
           <Calendar
             mode="single"
             selected={date}
             onSelect={setDate}
-            className="rounded-md border"
+            className="s-round-m"
+            data-testid="calendar"
           />
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle className="title-m">⏳ Chargement (exemple)</CardTitle>
+          <CardTitle className="s-title-m">⏳ Exemple de squelette</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-s">
+        <CardContent className="s-flex s-flex-column s-gap-s">
           <Skeleton className="h-4 w-3/4" />
           <Skeleton className="h-4 w-1/2" />
           <Skeleton className="h-4 w-full" />

@@ -1,47 +1,35 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import UserList, { type User } from '@/components/features/users/UserList';
 import { fetchData, mainUrl } from '@/lib/utils';
 import { useEffect, useState } from 'react';
 
-interface User {
-  id: number;
-  name: string;
-}
-
 export default function Users() {
-  const [users, setUsers] = useState<{ id: number; name: string }[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadUsers = async () => {
-      const { data, error } = await fetchData<User[]>(`${mainUrl}/api/users`, 'GET');
-      if (error) {
-        setError(error.message);
-      } else if (data) {
-        setUsers(data);
+      setLoading(true);
+      setError(null);
+      try {
+        const { data, error } = await fetchData<User[]>(`${mainUrl}/api/users`, 'GET');
+        if (error) {
+          setError(error.message);
+        } else if (data) {
+          setUsers(data);
+        }
+      } catch (err) {
+        setError('Erreur lors du chargement des utilisateurs');
+      } finally {
+        setLoading(false);
       }
     };
     loadUsers();
   }, []);
 
   return (
-    <div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Utilisateurs</CardTitle>
-          <CardDescription>List of registred users</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {error && <p style={{ color: 'red' }}>{error}</p>}
-          {users.length === 0 && !error && <p>No users found</p>}
-          <ul>
-            {users.map((element) => (
-              <li key={element.id}>
-                {element.name} - {element.id}
-              </li>
-            ))}
-          </ul>
-        </CardContent>
-      </Card>
+    <div className="s-container s-p-l">
+      <UserList users={users} loading={loading} error={error} />
     </div>
   );
 }
